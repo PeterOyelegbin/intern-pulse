@@ -1,0 +1,7 @@
+python-decouple==3.8
+Django==4.1.8
+djangorestframework==3.14.0
+django-cors-headers==3.14.0
+django-cockroachdb==4.1.1
+psycopg2-binary==2.9.5
+whitenoise==6.4.0
