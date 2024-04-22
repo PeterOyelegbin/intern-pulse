@@ -11,9 +11,12 @@ class RegistrationView(viewsets.ViewSet):
     def create(self, request):
         data = request.data
         serializer = self.serializer_class(data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return serializer.data
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response({"error": serializer.errors})
+
 
 
 class LogInView(viewsets.ViewSet):

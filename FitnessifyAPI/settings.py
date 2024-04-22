@@ -26,7 +26,7 @@ SECRET_KEY = config("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", cast=bool)
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost", "*.vercel.app"]
+ALLOWED_HOSTS = ["127.0.0.1", "localhost", ".vercel.app"]
 
 CORS_ALLOWED_ORIGINS = ["http://localhost:*", "http://127.0.0.1:*", "https://*.vercel.app"]
 
@@ -88,20 +88,20 @@ WSGI_APPLICATION = 'FitnessifyAPI.wsgi.application'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-
-    # # Remote or production db
-    # "default": {
-    #     "ENGINE": "django_cockroachdb",
-    #     "NAME": config('DB_NAME'),
-    #     "HOST": config('DB_HOST'),
-    #     "USER": config('DB_USER'),
-    #     "PORT": config('DB_PORT'),
-    #     "PASSWORD": config('DB_PASS')
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.sqlite3',
+    #     'NAME': BASE_DIR / 'db.sqlite3',
     # }
+
+    # Remote or production db
+    "default": {
+        "ENGINE": "djongo",
+        "ENFORCE_SCHEMA": False,
+        "NAME": config("DB_NAME"),
+        "CLIENT": {
+            'host': config("DB_HOST"),
+        }
+    }
 }
 
 
