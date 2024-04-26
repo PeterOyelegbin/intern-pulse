@@ -26,11 +26,11 @@ SECRET_KEY = config("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", cast=bool)
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost", ".onrender.com"]
+ALLOWED_HOSTS = ["127.0.0.1", "localhost", ".vercel.app"]
 
-CORS_ALLOWED_ORIGINS = ["http://localhost:*", "http://127.0.0.1:*", "https://*.onrender.com"]
+CORS_ALLOWED_ORIGINS = ["http://localhost:*", "http://127.0.0.1:*", "https://*.vercel.app"]
 
-CSRF_TRUSTED_ORIGINS = ["https://*.onrender.com"]
+CSRF_TRUSTED_ORIGINS = ["https://*.vercel.app"]
 
 
 # Application definition
@@ -96,7 +96,7 @@ DATABASES = {
     # Remote or production db
     "default": {
         "ENGINE": "djongo",
-        "ENFORCE_SCHEMA": False,
+        "ENFORCE_SCHEMA": True,
         "NAME": config("DB_NAME"),
         "CLIENT": {
             'host': config("DB_HOST"),

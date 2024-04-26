@@ -9,14 +9,10 @@ class RegistrationView(viewsets.ViewSet):
     serializer_class = RegistrationSerializer
 
     def create(self, request):
-        data = request.data
-        serializer = self.serializer_class(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        else:
-            return Response({"error": serializer.errors})
-
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, 201)
 
 
 class LogInView(viewsets.ViewSet):
@@ -24,10 +20,9 @@ class LogInView(viewsets.ViewSet):
 
     def create(self, request):
         data = request.data
-        email = data["email"]
-        password = data["password"]
-        user = authenticate(username=email, password=password)
+        serializer = self.serializer_class(data=data)
+        serializer.is_valid(raise_exception=True)
+        user = authenticate(username=data["email"], password=data["password"])
         if user is None:
             return Response({"Error": "Incorrect email or password"}, 401)
         return Response({"UID": user.id}, 200)
-    

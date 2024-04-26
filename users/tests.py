@@ -1,14 +1,15 @@
 from django.test import TestCase
-from django.contrib.auth import get_user_model
-from rest_framework.exceptions import ValidationError
-from .serializers import RegistrationSerializer, LogInSerializer
+from rest_framework.test import APIClient
+from rest_framework import status
+from .serializers import UserModel
 
 
-# Create your tests here.
-UserModel = get_user_model()
+class RegistrationTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
 
-class RegistrationSerializerTestCase(TestCase):
-    def test_valid_registration_data(self):
+    # Valid registration data
+    def test_registration_success(self):
         valid_data = {
             'first_name': 'John',
             'last_name': 'Doe',
@@ -16,60 +17,86 @@ class RegistrationSerializerTestCase(TestCase):
             'email': 'johndoe@example.com',
             'password': 'supersecret',
         }
-        serializer = RegistrationSerializer(data=valid_data)
-        self.assertTrue(serializer.is_valid())
-    
-    def test_create_user(self):
-        valid_data = {
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'username': 'johndoe',
-            'email': 'johndoe@example.com',
-            'password': 'supersecret',
-        }
-        serializer = RegistrationSerializer(data=valid_data)
-        self.assertTrue(serializer.is_valid())
-        user = serializer.save()
-        self.assertIsInstance(user, UserModel)
-        self.assertEqual(user.username, 'johndoe')
-        self.assertEqual(user.email, 'johndoe@example.com')
-        # Add more assertions as needed
+        response = self.client.post('/signup', valid_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        # Check if the user was created
+        self.assertTrue("username" in response.data)
+        self.assertEqual(response.data["username"], valid_data["username"])
 
-    def test_invalid_registration_data(self):
+    # Invalid registration data (validate email field)
+    def test_registration_invalid_email(self):
         invalid_data = {
             'first_name': 'John',
             'last_name': 'Doe',
-            'email': 'invalidemail',  # Invalid email format
-            'password': 'short',       # Password too short
+            'username': 'johndoe',
+            'email': 'johndoe.example.com',
+            'password': 'supersecret',
         }
-        serializer = RegistrationSerializer(data=invalid_data)
-        self.assertFalse(serializer.is_valid())
-        # Check specific fields for errors
-        self.assertIn('email', serializer.errors)
-        self.assertIn('password', serializer.errors)
+        response = self.client.post('/signup', invalid_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # Check if the expected error message is returned
+        expected_error = {
+            "email": ["Enter a valid email address."],
+        }
+        self.assertEqual(response.data, expected_error)
+
+    # Invalid registration data (missing required field 'first_name, last_name, password')
+    def test_registration_required_data(self):
+        invalid_data = {
+            'username': 'johndoe',
+            'email': 'johndoe@example.com',
+        }
+        response = self.client.post('/signup', invalid_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # Check if the expected error message is returned
+        expected_error = {
+            "first_name": ["This field is required."],
+            "last_name": ["This field is required."],
+            "password": ["This field is required."]
+        }
+        self.assertEqual(response.data, expected_error)
 
 
-class LogInSerializerTestCase(TestCase):
-    def test_valid_login_data(self):
-        user = UserModel.objects.create_user(username='johndoe', email='johndoe@example.com', password='supersecret')
-        login_data = {
+class LogInTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = UserModel.objects.create_user(first_name='John', last_name='Doe', username='johndoe', email='johndoe@example.com', password='supersecret')
+
+    # Valid login data
+    def test_login_success(self):
+        valid_data = {
             'email': 'johndoe@example.com',
             'password': 'supersecret',
         }
-        serializer = LogInSerializer(data=login_data)
-        self.assertTrue(serializer.is_valid())
-        # Check if email and password are in validated_data
-        self.assertIn('email', serializer.validated_data)
-        self.assertIn('password', serializer.validated_data)
+        response = self.client.post('/login', valid_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Check if the expected UID is returned in the response
+        self.assertTrue("UID" in response.data)
+        self.assertEqual(response.data["UID"], self.user.id)
 
-    def test_invalid_login_data(self):
-        user = UserModel.objects.create_user(username='johndoe', email='johndoe@example.com', password='supersecret')
-        invalid_login_data = {
+    # Invalid login data
+    def test_login_invalid_password(self):
+        invalid_data = {
             'email': 'johndoe@example.com',
-            'password': 'wrongpassword',  # Incorrect password
+            'password': 'Supersecret',
         }
-        serializer = LogInSerializer(data=invalid_login_data)
-        self.assertFalse(serializer.is_valid())
-        # Check if serializer raises ValidationError
-        with self.assertRaises(ValidationError):
-            serializer.is_valid(raise_exception=True)
+        response = self.client.post('/login', invalid_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        # Check if the expected error message is returned
+        expected_error = {
+            'Error': 'Incorrect email or password'
+        }
+        self.assertEqual(response.data, expected_error)
+
+    # Missing login data (email)
+    def test_login_missing_credentials(self):
+        missing_data = {
+            'password': 'password'
+        }
+        response = self.client.post('/login', missing_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # Check if the expected error message is returned
+        expected_error = {
+            'email': ['This field is required.']
+        }
+        self.assertEqual(response.data, expected_error)
